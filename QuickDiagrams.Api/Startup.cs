@@ -10,6 +10,7 @@ using QuickDiagrams.Api.Data.Migrations;
 using QuickDiagrams.Api.Data.TypeHandlers;
 using QuickDiagrams.Api.Identity;
 using QuickDiagrams.Api.Models;
+using QuickDiagrams.Api.Services;
 
 namespace QuickDiagrams.Api
 {
@@ -39,6 +40,8 @@ namespace QuickDiagrams.Api
             services.AddSingleton<IDatabaseConnectionFactory, SqliteDatabaseConnectionFactory>();
             services.AddSingleton<IDataMigrationRunner, SqliteDataMigrationRunner>();
 
+            services.AddSingleton<IEmailSender, EmailSender>();
+
             RegisterMigrations(services);
         }
 
@@ -48,22 +51,36 @@ namespace QuickDiagrams.Api
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                app
+                    .UseExceptionHandler("/Home/Error")
+                    .UseHsts();
+            }
 
             app
                 .UseHttpsRedirection()
-                .UseAuthentication();
+                .UseRouting();
 
             app
-                .UseRouting()
-                .UseEndpoints(endpoints =>
+                .UseStaticFiles()
+                .UseAuthentication()
+                .UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
                 {
+                    endpoints.MapDefaultControllerRoute();
                     endpoints.MapControllers();
+                    endpoints.MapRazorPages();
                 });
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             ConfigureDapper();
+
+            services.AddControllersWithViews();
+            services.AddRazorPages();
 
             services
                 .AddAuthentication()
@@ -81,8 +98,6 @@ namespace QuickDiagrams.Api
             services
                 .AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddDefaultTokenProviders();
-
-            services.AddControllers();
 
             RegisterServices(services);
         }

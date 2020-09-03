@@ -1,6 +1,6 @@
 ﻿namespace QuickDiagrams.Api.Models
 {
-    public class ApplicationRole
+    public class ApplicationRoleViewModel
     {
         public int Id { get; set; }
 

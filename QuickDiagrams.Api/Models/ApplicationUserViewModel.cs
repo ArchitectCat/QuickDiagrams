@@ -1,6 +1,6 @@
 ﻿namespace QuickDiagrams.Api.Models
 {
-    public class ApplicationUser
+    public class ApplicationUserViewModel
     {
         public string Email { get; set; }
 

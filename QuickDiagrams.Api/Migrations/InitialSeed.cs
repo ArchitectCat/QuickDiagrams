@@ -1,9 +1,10 @@
 ﻿using Dapper;
+using QuickDiagrams.Storage.Migrations;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QuickDiagrams.Api.Data.Migrations
+namespace QuickDiagrams.Api.Migrations
 {
     public class InitialSeed
         : IDataMigration

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using QuickDiagrams.Storage.Migrations;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QuickDiagrams.Api.Data
+namespace QuickDiagrams.Storage.Sqlite.Migrations
 {
     public class SqliteDataMigrationRunner
         : IDataMigrationRunner

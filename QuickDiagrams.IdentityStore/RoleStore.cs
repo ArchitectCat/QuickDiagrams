@@ -1,13 +1,12 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
-using QuickDiagrams.Api.Data;
-using QuickDiagrams.Api.Models;
+using QuickDiagrams.Storage;
 using System;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QuickDiagrams.Api.Identity
+namespace QuickDiagrams.IdentityStore
 {
     public class RoleStore
         : IRoleStore<ApplicationRole>

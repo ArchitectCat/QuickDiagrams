@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace QuickDiagrams.Api.Data.TypeHandlers
+namespace QuickDiagrams.Storage.Sqlite.TypeHandlers
 {
     public class GuidTypeHandler
         : SqliteTypeHandler<Guid>

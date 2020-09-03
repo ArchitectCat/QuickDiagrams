@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using System.Data;
 
-namespace QuickDiagrams.Api.Data.TypeHandlers
+namespace QuickDiagrams.Storage.Sqlite.TypeHandlers
 {
     public abstract class SqliteTypeHandler<T>
         : SqlMapper.TypeHandler<T>

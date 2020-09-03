@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickDiagrams.Api", "QuickDiagrams.Api\QuickDiagrams.Api.csproj", "{AA59756E-A2A9-4716-AA6C-35A43B3D001B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuickDiagrams.Api", "QuickDiagrams.Api\QuickDiagrams.Api.csproj", "{AA59756E-A2A9-4716-AA6C-35A43B3D001B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickDiagrams.Storage", "QuickDiagrams.Storage\QuickDiagrams.Storage.csproj", "{A5A88675-4B4D-4EDE-98A5-F17945B76F7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickDiagrams.Storage.Sqlite", "QuickDiagrams.Storage.Sqlite\QuickDiagrams.Storage.Sqlite.csproj", "{0D19355F-0B12-48DB-B0F4-E6E206FDA543}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickDiagrams.IdentityStore", "QuickDiagrams.IdentityStore\QuickDiagrams.IdentityStore.csproj", "{9CC63F8C-9990-4693-8917-A6003D27756D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{AA59756E-A2A9-4716-AA6C-35A43B3D001B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA59756E-A2A9-4716-AA6C-35A43B3D001B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA59756E-A2A9-4716-AA6C-35A43B3D001B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5A88675-4B4D-4EDE-98A5-F17945B76F7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5A88675-4B4D-4EDE-98A5-F17945B76F7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5A88675-4B4D-4EDE-98A5-F17945B76F7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5A88675-4B4D-4EDE-98A5-F17945B76F7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D19355F-0B12-48DB-B0F4-E6E206FDA543}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D19355F-0B12-48DB-B0F4-E6E206FDA543}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D19355F-0B12-48DB-B0F4-E6E206FDA543}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D19355F-0B12-48DB-B0F4-E6E206FDA543}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CC63F8C-9990-4693-8917-A6003D27756D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CC63F8C-9990-4693-8917-A6003D27756D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CC63F8C-9990-4693-8917-A6003D27756D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CC63F8C-9990-4693-8917-A6003D27756D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

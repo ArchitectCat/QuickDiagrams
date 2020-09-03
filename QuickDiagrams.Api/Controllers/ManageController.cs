@@ -23,13 +23,13 @@ namespace QuickDiagrams.Api.Controllers
         private const string AuthenicatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly SignInManager<ApplicationUserViewModel> _signInManager;
         private readonly UrlEncoder _urlEncoder;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly UserManager<ApplicationUserViewModel> _userManager;
 
         public ManageController(
-          UserManager<ApplicationUser> userManager,
-          SignInManager<ApplicationUser> signInManager,
+          UserManager<ApplicationUserViewModel> userManager,
+          SignInManager<ApplicationUserViewModel> signInManager,
           IEmailSender emailSender,
           ILoggerFactory loggerFactory,
           UrlEncoder urlEncoder)

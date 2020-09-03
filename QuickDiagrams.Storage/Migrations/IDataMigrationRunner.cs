@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QuickDiagrams.Api.Data
+namespace QuickDiagrams.Storage.Migrations
 {
     public interface IDataMigrationRunner
     {

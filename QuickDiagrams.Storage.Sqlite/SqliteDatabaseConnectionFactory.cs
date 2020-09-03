@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Data.Common;
 
-namespace QuickDiagrams.Api.Data
+namespace QuickDiagrams.Storage.Sqlite
 {
     public class SqliteDatabaseConnectionFactory
         : IDatabaseConnectionFactory

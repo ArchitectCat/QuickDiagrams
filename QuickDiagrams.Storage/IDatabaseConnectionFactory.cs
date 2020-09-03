@@ -1,6 +1,6 @@
 ﻿using System.Data.Common;
 
-namespace QuickDiagrams.Api.Data
+namespace QuickDiagrams.Storage
 {
     public interface IDatabaseConnectionFactory
     {

@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using QuickDiagrams.Api.Data;
-using QuickDiagrams.Api.Data.Migrations;
-using QuickDiagrams.Api.Data.TypeHandlers;
-using QuickDiagrams.Api.Identity;
-using QuickDiagrams.Api.Models;
+using QuickDiagrams.Api.Migrations;
 using QuickDiagrams.Api.Services;
+using QuickDiagrams.IdentityStore;
+using QuickDiagrams.Storage;
+using QuickDiagrams.Storage.Migrations;
+using QuickDiagrams.Storage.Sqlite;
+using QuickDiagrams.Storage.Sqlite.Migrations;
+using QuickDiagrams.Storage.Sqlite.TypeHandlers;
 
 namespace QuickDiagrams.Api
 {

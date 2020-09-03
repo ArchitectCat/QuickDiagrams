@@ -5,10 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.35" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="3.1.7" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.7" />
     <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="3.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickDiagrams.IdentityStore\QuickDiagrams.IdentityStore.csproj" />
+    <ProjectReference Include="..\QuickDiagrams.Storage.Sqlite\QuickDiagrams.Storage.Sqlite.csproj" />
   </ItemGroup>
 
 </Project>

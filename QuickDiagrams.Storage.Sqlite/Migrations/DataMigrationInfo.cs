@@ -1,4 +1,4 @@
-﻿namespace QuickDiagrams.Api.Data
+﻿namespace QuickDiagrams.Storage.Sqlite.Migrations
 {
     internal struct DataMigrationInfo
     {

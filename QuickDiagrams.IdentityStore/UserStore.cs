@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
-using QuickDiagrams.Api.Data;
-using QuickDiagrams.Api.Models;
+using QuickDiagrams.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,7 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QuickDiagrams.Api.Identity
+namespace QuickDiagrams.IdentityStore
 {
     public class UserStore
         : IUserStore<ApplicationUser>
@@ -337,10 +336,10 @@ namespace QuickDiagrams.Api.Identity
                 (
                     commandText:
                         @"SELECT u.[Id], u.[UserName], u.[NormalizedUserName], u.[Email], u.[NormalizedEmail],
-                        u.[EmailConfirmed], u.[PasswordHash], u.[PhoneNumber], u.[PhoneNumberConfirmed], 
-                        u.[TwoFactorEnabled] FROM [ApplicationUser] u 
-                        INNER JOIN [ApplicationUserRole] ur ON ur.[UserId] = u.[Id] 
-                        INNER JOIN [ApplicationRole] r ON r.[Id] = ur.[RoleId] 
+                        u.[EmailConfirmed], u.[PasswordHash], u.[PhoneNumber], u.[PhoneNumberConfirmed],
+                        u.[TwoFactorEnabled] FROM [ApplicationUser] u
+                        INNER JOIN [ApplicationUserRole] ur ON ur.[UserId] = u.[Id]
+                        INNER JOIN [ApplicationRole] r ON r.[Id] = ur.[RoleId]
                         WHERE r.[NormalizedName] = @NormalizedName",
                     parameters: new { NormalizedName = roleName.ToUpper() },
                     cancellationToken: cancellationToken
@@ -378,7 +377,7 @@ namespace QuickDiagrams.Api.Identity
                 var cmd = new CommandDefinition
                 (
                     commandText:
-                        @"SELECT COUNT(1) FROM [ApplicationUserRole] 
+                        @"SELECT COUNT(1) FROM [ApplicationUserRole]
                         WHERE [UserId] = @UserId AND [RoleId] = @RoleId",
                     parameters: new { UserId = user.Id, RoleId = roleId },
                     cancellationToken: cancellationToken

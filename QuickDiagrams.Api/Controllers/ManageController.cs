@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using QuickDiagrams.Api.Extensions;
-using QuickDiagrams.Api.Models;
 using QuickDiagrams.Api.Models.ManageViewModels;
 using QuickDiagrams.Api.Services;
+using QuickDiagrams.IdentityStore;
 using System;
 using System.Linq;
 using System.Text;
@@ -21,15 +21,16 @@ namespace QuickDiagrams.Api.Controllers
     public class ManageController : Controller
     {
         private const string AuthenicatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
-        private readonly SignInManager<ApplicationUserViewModel> _signInManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UrlEncoder _urlEncoder;
-        private readonly UserManager<ApplicationUserViewModel> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public ManageController(
-          UserManager<ApplicationUserViewModel> userManager,
-          SignInManager<ApplicationUserViewModel> signInManager,
+          UserManager<ApplicationUser> userManager,
+          SignInManager<ApplicationUser> signInManager,
           IEmailSender emailSender,
           ILoggerFactory loggerFactory,
           UrlEncoder urlEncoder)

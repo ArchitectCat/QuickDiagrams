@@ -7,6 +7,7 @@ using QuickDiagrams.Api.Extensions;
 using QuickDiagrams.Api.Models;
 using QuickDiagrams.Api.Models.AccountViewModels;
 using QuickDiagrams.Api.Services;
+using QuickDiagrams.IdentityStore;
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -20,12 +21,12 @@ namespace QuickDiagrams.Api.Controllers
     {
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
-        private readonly SignInManager<ApplicationUserViewModel> _signInManager;
-        private readonly UserManager<ApplicationUserViewModel> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public AccountController(
-            UserManager<ApplicationUserViewModel> userManager,
-            SignInManager<ApplicationUserViewModel> signInManager,
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
             IEmailSender emailSender,
             ILoggerFactory loggerFactory)
         {
@@ -121,7 +122,8 @@ namespace QuickDiagrams.Api.Controllers
                 {
                     throw new ApplicationException("Error loading external login information during confirmation.");
                 }
-                var user = new ApplicationUserViewModel { UserName = model.Email, Email = model.Email };
+
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
                 var result = await _userManager.CreateAsync(user);
                 if (result.Succeeded)
                 {
@@ -371,7 +373,7 @@ namespace QuickDiagrams.Api.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUserViewModel { UserName = model.Email, Email = model.Email };
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {

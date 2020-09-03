@@ -5,6 +5,7 @@ using QuickDiagrams.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -61,15 +62,15 @@ namespace QuickDiagrams.Api.Identity
 
                             roleId = await connection.ExecuteScalarAsync<int?>(selectRoleCmd);
                         }
-                        
+
                         var insertCmd = new CommandDefinition
                         (
                             commandText:
                                 @"IF NOT EXISTS(
-                                    SELECT 1 FROM [ApplicationUserRole] 
+                                    SELECT 1 FROM [ApplicationUserRole]
                                     WHERE [UserId] = @UserId AND [RoleId] = @RoleId
                                 )
-                                INSERT INTO [ApplicationUserRole] ([UserId], [RoleId]) 
+                                INSERT INTO [ApplicationUserRole] ([UserId], [RoleId])
                                 VALUES(@UserId, @RoleId)",
                             parameters: new { UserId = user.Id, RoleId = roleId },
                             cancellationToken: cancellationToken
@@ -130,13 +131,13 @@ namespace QuickDiagrams.Api.Identity
                             await transaction.CommitAsync(cancellationToken);
                             return IdentityResult.Success;
                         }
-                        else 
+                        else
                         {
                             await transaction.RollbackAsync(cancellationToken);
-                            return IdentityResult.Failed(new IdentityError() 
+                            return IdentityResult.Failed(new IdentityError()
                             {
                                 Code = "User_Lookup_Error",
-                                Description = "Failed to lookup newly added user." 
+                                Description = "Failed to lookup newly added user."
                             });
                         }
                     }
@@ -289,9 +290,25 @@ namespace QuickDiagrams.Api.Identity
             return Task.FromResult(user.PhoneNumberConfirmed);
         }
 
-        public Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT r.[Name] FROM [ApplicationRole] r
+                        INNER JOIN [ApplicationUserRole] ur ON ur.[RoleId] = r.Id
+                        WHERE ur.UserId = @UserId",
+                    parameters: new { UserId = user.Id },
+                    cancellationToken: cancellationToken
+                );
+
+                return (await connection.QueryAsync<string>(cmd)).ToList();
+            }
         }
 
         public Task<bool> GetTwoFactorEnabledAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -309,9 +326,28 @@ namespace QuickDiagrams.Api.Identity
             return Task.FromResult(user.UserName);
         }
 
-        public Task<IList<ApplicationUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+        public async Task<IList<ApplicationUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT u.[Id], u.[UserName], u.[NormalizedUserName], u.[Email], u.[NormalizedEmail],
+                        u.[EmailConfirmed], u.[PasswordHash], u.[PhoneNumber], u.[PhoneNumberConfirmed], 
+                        u.[TwoFactorEnabled] FROM [ApplicationUser] u 
+                        INNER JOIN [ApplicationUserRole] ur ON ur.[UserId] = u.[Id] 
+                        INNER JOIN [ApplicationRole] r ON r.[Id] = ur.[RoleId] 
+                        WHERE r.[NormalizedName] = @NormalizedName",
+                    parameters: new { NormalizedName = roleName.ToUpper() },
+                    cancellationToken: cancellationToken
+                );
+
+                return (await connection.QueryAsync<ApplicationUser>(cmd)).ToList();
+            }
         }
 
         public Task<bool> HasPasswordAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -319,14 +355,83 @@ namespace QuickDiagrams.Api.Identity
             return Task.FromResult(user.PasswordHash != null);
         }
 
-        public Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
+        public async Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var selectRoleCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"SELECT [Id] FROM [ApplicationRole]
+                                WHERE [NormalizedName] = @NormalizedName",
+                            parameters: new { NormalizedName = roleName.ToUpper() },
+                            cancellationToken: cancellationToken
+                        );
+
+                var roleId = await connection.ExecuteScalarAsync<int?>(selectRoleCmd);
+                if (!roleId.HasValue)
+                    return false;
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT COUNT(1) FROM [ApplicationUserRole] 
+                        WHERE [UserId] = @UserId AND [RoleId] = @RoleId",
+                    parameters: new { UserId = user.Id, RoleId = roleId },
+                    cancellationToken: cancellationToken
+                );
+
+                return (await connection.ExecuteScalarAsync<int>(cmd) > 0);
+            }
         }
 
-        public Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
+        public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var selectRoleCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"SELECT [Id] FROM [ApplicationRole]
+                                WHERE [NormalizedName] = @NormalizedName",
+                            parameters: new { NormalizedName = roleName.ToUpper() },
+                            cancellationToken: cancellationToken
+                        );
+
+                        var roleId = await connection.ExecuteScalarAsync<int?>(selectRoleCmd);
+                        if (roleId.HasValue)
+                        {
+                            var deleteCmd = new CommandDefinition
+                            (
+                                commandText:
+                                    @"DELETE FROM [ApplicationUserRole]
+                                    WHERE [UserId] = @UserId AND [RoleId] = @RoleId",
+                                parameters: new { UserId = user.Id, RoleId = roleId },
+                                cancellationToken: cancellationToken
+                            );
+
+                            await connection.ExecuteAsync(deleteCmd);
+
+                            await transaction.CommitAsync(cancellationToken);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw ex;
+                    }
+                }
+            }
         }
 
         public Task SetEmailAsync(ApplicationUser user, string email, CancellationToken cancellationToken)

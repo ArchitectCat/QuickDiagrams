@@ -27,6 +27,23 @@ namespace QuickDiagrams.Api.Data.Migrations
                         [TwoFactorEnabled] INTEGER NOT NULL
                     )"
             );
+
+            await connection.ExecuteAsync(
+                @"CREATE TABLE IF NOT EXISTS [ApplicationRole]
+                    (
+                        [Id] INTEGER NOT NULL PRIMARY KEY,
+                        [Name] TEXT NOT NULL,
+                        [NormalizedName] TEXT NOT NULL
+                    )"
+            );
+
+            await connection.ExecuteAsync(
+                @"CREATE TABLE IF NOT EXISTS [ApplicationUserRole]
+                    (
+                        [UserId] INTEGER NOT NULL,
+	                    [RoleId] INTEGER NOT NULL
+                    )"
+            );
         }
     }
 }

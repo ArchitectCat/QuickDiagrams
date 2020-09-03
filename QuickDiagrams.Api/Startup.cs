@@ -9,7 +9,7 @@ using QuickDiagrams.Api.Data;
 using QuickDiagrams.Api.Data.Migrations;
 using QuickDiagrams.Api.Data.TypeHandlers;
 using QuickDiagrams.Api.Identity;
-using QuickDiagrams.Api.Identity.Models;
+using QuickDiagrams.Api.Models;
 
 namespace QuickDiagrams.Api
 {

@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Identity;
 using QuickDiagrams.Api.Data;
-using QuickDiagrams.Api.Identity.Models;
+using QuickDiagrams.Api.Models;
 using System;
 using System.Data;
 using System.Threading;

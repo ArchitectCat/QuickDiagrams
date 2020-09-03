@@ -1,4 +1,4 @@
-﻿namespace QuickDiagrams.Api.Identity.Models
+﻿namespace QuickDiagrams.Api.Models
 {
     public class ApplicationRole
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using QuickDiagrams.Api.Data;
-using QuickDiagrams.Api.Identity.Models;
+using QuickDiagrams.Api.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;

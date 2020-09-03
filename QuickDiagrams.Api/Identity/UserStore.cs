@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Dapper;
+using Microsoft.AspNetCore.Identity;
 using QuickDiagrams.Api.Data;
 using QuickDiagrams.Api.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,74 +25,268 @@ namespace QuickDiagrams.Api.Identity
             _connectionFactory = connectionFactory;
         }
 
-        public Task AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
+        public async Task AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var selectRoleCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"SELECT [Id] FROM [ApplicationRole]
+                                WHERE [NormalizedName] = @NormalizedName",
+                            parameters: new { NormalizedName = roleName.ToUpper() },
+                            cancellationToken: cancellationToken
+                        );
+
+                        var roleId = await connection.ExecuteScalarAsync<int?>(selectRoleCmd);
+                        if (!roleId.HasValue)
+                        {
+                            var insertRoleCmd = new CommandDefinition
+                            (
+                                commandText:
+                                    @"INSERT INTO [ApplicationRole] ([Name], [NormalizedName])
+                                    VALUES (@Name, @NormalizedName)",
+                                parameters: new { Name = roleName, NormalizedName = roleName.ToUpper() },
+                                cancellationToken: cancellationToken
+                            );
+
+                            await connection.ExecuteAsync(insertRoleCmd);
+
+                            roleId = await connection.ExecuteScalarAsync<int?>(selectRoleCmd);
+                        }
+                        
+                        var insertCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"IF NOT EXISTS(
+                                    SELECT 1 FROM [ApplicationUserRole] 
+                                    WHERE [UserId] = @UserId AND [RoleId] = @RoleId
+                                )
+                                INSERT INTO [ApplicationUserRole] ([UserId], [RoleId]) 
+                                VALUES(@UserId, @RoleId)",
+                            parameters: new { UserId = user.Id, RoleId = roleId },
+                            cancellationToken: cancellationToken
+                        );
+
+                        await connection.ExecuteAsync(insertCmd);
+
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw ex;
+                    }
+                }
+            }
         }
 
-        public Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var insertCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"INSERT INTO [ApplicationUser] ([UserName], [NormalizedUserName], [Email],
+                                [NormalizedEmail], [EmailConfirmed], [PasswordHash], [PhoneNumber], [PhoneNumberConfirmed],
+                                [TwoFactorEnabled])
+                                VALUES (@UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, @PasswordHash,
+                                @PhoneNumber, @PhoneNumberConfirmed, @TwoFactorEnabled)",
+                            parameters: user,
+                            cancellationToken: cancellationToken
+                        );
+
+                        await connection.ExecuteAsync(insertCmd);
+
+                        var selectCmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"SELECT [Id] FROM [ApplicationUser]
+                                WHERE [NormalizedUserName] = @NormalizedUserName AND [NormalizedEmail] = @NormalizedEmail",
+                            parameters: user,
+                            cancellationToken: cancellationToken
+                        );
+
+                        var newId = await connection.ExecuteScalarAsync<int?>(selectCmd);
+                        if (newId.HasValue && newId.Value > 0)
+                        {
+                            user.Id = newId.Value;
+
+                            await transaction.CommitAsync(cancellationToken);
+                            return IdentityResult.Success;
+                        }
+                        else 
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return IdentityResult.Failed(new IdentityError() 
+                            {
+                                Code = "User_Lookup_Error",
+                                Description = "Failed to lookup newly added user." 
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw ex;
+                    }
+                }
+            }
         }
 
-        public Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var cmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"DELETE FROM [ApplicationUser]
+                                WHERE [Id] = @Id",
+                            parameters: user,
+                            cancellationToken: cancellationToken
+                        );
+
+                        await connection.ExecuteAsync(cmd);
+                        await transaction.CommitAsync(cancellationToken);
+
+                        return IdentityResult.Success;
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw ex;
+                    }
+                }
+            }
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            // Nothing to dispose
         }
 
-        public Task<ApplicationUser> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
+        public async Task<ApplicationUser> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT [Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail],
+                        [EmailConfirmed], [PasswordHash], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled]
+                        FROM [ApplicationUser]
+                        WHERE [NormalizedEmail] = @NormalizedEmail",
+                    parameters: new { NormalizedEmail = normalizedEmail },
+                    cancellationToken: cancellationToken
+                );
+
+                return await connection.QuerySingleOrDefaultAsync<ApplicationUser>(cmd);
+            }
         }
 
-        public Task<ApplicationUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
+        public async Task<ApplicationUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT [Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail],
+                        [EmailConfirmed], [PasswordHash], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled]
+                        FROM [ApplicationUser]
+                        WHERE [Id] = @Id",
+                    parameters: new { Id = userId },
+                    cancellationToken: cancellationToken
+                );
+
+                return await connection.QuerySingleOrDefaultAsync<ApplicationUser>(cmd);
+            }
         }
 
-        public Task<ApplicationUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
+        public async Task<ApplicationUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                var cmd = new CommandDefinition
+                (
+                    commandText:
+                        @"SELECT [Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail],
+                        [EmailConfirmed], [PasswordHash], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled]
+                        FROM [ApplicationUser]
+                        WHERE [NormalizedUserName] = @NormalizedUserName",
+                    parameters: new { NormalizedUserName = normalizedUserName },
+                    cancellationToken: cancellationToken
+                );
+
+                return await connection.QuerySingleOrDefaultAsync<ApplicationUser>(cmd);
+            }
         }
 
         public Task<string> GetEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.Email);
         }
 
         public Task<bool> GetEmailConfirmedAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.EmailConfirmed);
         }
 
         public Task<string> GetNormalizedEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.NormalizedEmail);
         }
 
         public Task<string> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.NormalizedUserName);
         }
 
         public Task<string> GetPasswordHashAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.PasswordHash);
         }
 
         public Task<string> GetPhoneNumberAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.PhoneNumber);
         }
 
         public Task<bool> GetPhoneNumberConfirmedAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.PhoneNumberConfirmed);
         }
 
         public Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -100,17 +296,17 @@ namespace QuickDiagrams.Api.Identity
 
         public Task<bool> GetTwoFactorEnabledAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.TwoFactorEnabled);
         }
 
         public Task<string> GetUserIdAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.Id.ToString());
         }
 
         public Task<string> GetUserNameAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.UserName);
         }
 
         public Task<IList<ApplicationUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
@@ -120,7 +316,7 @@ namespace QuickDiagrams.Api.Identity
 
         public Task<bool> HasPasswordAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(user.PasswordHash != null);
         }
 
         public Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken cancellationToken)
@@ -135,52 +331,99 @@ namespace QuickDiagrams.Api.Identity
 
         public Task SetEmailAsync(ApplicationUser user, string email, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.Email = email;
+            return Task.CompletedTask;
         }
 
         public Task SetEmailConfirmedAsync(ApplicationUser user, bool confirmed, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.EmailConfirmed = confirmed;
+            return Task.CompletedTask;
         }
 
         public Task SetNormalizedEmailAsync(ApplicationUser user, string normalizedEmail, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.NormalizedEmail = normalizedEmail;
+            return Task.CompletedTask;
         }
 
         public Task SetNormalizedUserNameAsync(ApplicationUser user, string normalizedName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.NormalizedUserName = normalizedName;
+            return Task.CompletedTask;
         }
 
         public Task SetPasswordHashAsync(ApplicationUser user, string passwordHash, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.PasswordHash = passwordHash;
+            return Task.CompletedTask;
         }
 
         public Task SetPhoneNumberAsync(ApplicationUser user, string phoneNumber, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.PhoneNumber = phoneNumber;
+            return Task.CompletedTask;
         }
 
         public Task SetPhoneNumberConfirmedAsync(ApplicationUser user, bool confirmed, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.PhoneNumberConfirmed = confirmed;
+            return Task.CompletedTask;
         }
 
         public Task SetTwoFactorEnabledAsync(ApplicationUser user, bool enabled, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.TwoFactorEnabled = enabled;
+            return Task.CompletedTask;
         }
 
         public Task SetUserNameAsync(ApplicationUser user, string userName, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            user.UserName = userName;
+            return Task.CompletedTask;
         }
 
-        public Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken cancellationToken)
+        public async Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var connection = _connectionFactory.Create())
+            {
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
+
+                using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
+                {
+                    try
+                    {
+                        var cmd = new CommandDefinition
+                        (
+                            commandText:
+                                @"UPDATE [ApplicationRole] SET
+                                [UserName] = @UserName,
+                                [NormalizedUserName] = @NormalizedUserName,
+                                [Email] = @Email,
+                                [NormalizedEmail] = @NormalizedEmail,
+                                [EmailConfirmed] = @EmailConfirmed,
+                                [PasswordHash] = @PasswordHash,
+                                [PhoneNumber] = @PhoneNumber,
+                                [PhoneNumberConfirmed] = @PhoneNumberConfirmed,
+                                [TwoFactorEnabled] = @TwoFactorEnabled
+                                WHERE [Id] = @Id",
+                            parameters: user,
+                            cancellationToken: cancellationToken
+                        );
+
+                        await connection.ExecuteAsync(cmd);
+                        await transaction.CommitAsync(cancellationToken);
+
+                        return IdentityResult.Success;
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw ex;
+                    }
+                }
+            }
         }
     }
 }

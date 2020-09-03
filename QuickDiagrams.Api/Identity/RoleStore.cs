@@ -50,8 +50,23 @@ namespace QuickDiagrams.Api.Identity
                             cancellationToken: cancellationToken
                         );
 
-                        role.Id = await connection.QuerySingleAsync<int>(selectCmd);
-                        await transaction.CommitAsync(cancellationToken);
+                        var newId = await connection.ExecuteScalarAsync<int?>(selectCmd);
+                        if (newId.HasValue && newId.Value > 0)
+                        {
+                            role.Id = newId.Value;
+
+                            await transaction.CommitAsync(cancellationToken);
+                            return IdentityResult.Success;
+                        }
+                        else
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return IdentityResult.Failed(new IdentityError()
+                            {
+                                Code = "User_Lookup_Error",
+                                Description = "Failed to lookup newly added user."
+                            });
+                        }
 
                         return IdentityResult.Success;
                     }

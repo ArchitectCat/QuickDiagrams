@@ -1,12 +1,15 @@
 using Dapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QuickDiagrams.Api.Data;
 using QuickDiagrams.Api.Data.Migrations;
 using QuickDiagrams.Api.Data.TypeHandlers;
+using QuickDiagrams.Api.Identity;
+using QuickDiagrams.Api.Identity.Models;
 
 namespace QuickDiagrams.Api
 {
@@ -46,19 +49,21 @@ namespace QuickDiagrams.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseRouting();
+            app
+                .UseHttpsRedirection()
+                .UseAuthentication();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app
+                .UseRouting()
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                });
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             ConfigureDapper();
-
-            services.AddControllers();
 
             services
                 .AddAuthentication()
@@ -69,6 +74,15 @@ namespace QuickDiagrams.Api
                     options.ClientSecret = googleConfig["ClientSecret"];
                     options.CallbackPath = "/signin-google";
                 });
+
+            services.AddSingleton<IUserStore<ApplicationUser>, UserStore>();
+            services.AddSingleton<IRoleStore<ApplicationRole>, RoleStore>();
+
+            services
+                .AddIdentity<ApplicationUser, ApplicationRole>()
+                .AddDefaultTokenProviders();
+
+            services.AddControllers();
 
             RegisterServices(services);
         }

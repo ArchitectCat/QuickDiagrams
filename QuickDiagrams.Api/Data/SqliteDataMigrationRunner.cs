@@ -23,24 +23,24 @@ namespace QuickDiagrams.Api.Data
             if (!migrations.Any())
                 return;
 
-            using (var conn = _connectionFactory.Create())
+            using (var connection = _connectionFactory.Create())
             {
-                if (conn.State != ConnectionState.Open)
-                    await conn.OpenAsync(cancellationToken);
+                if (connection.State != ConnectionState.Open)
+                    await connection.OpenAsync(cancellationToken);
 
                 var allMigrations = migrations.Select(x => new DataMigrationInfo
                 {
                     Version = x.Version
                 }).ToList();
 
-                await conn.ExecuteAsync(
+                await connection.ExecuteAsync(
                     @"CREATE TABLE IF NOT EXISTS [Migrations]
                         (
                             [Version] INTEGER NOT NULL
                         )"
                 );
 
-                var pastMigrations = await conn.QueryAsync<DataMigrationInfo>(
+                var pastMigrations = await connection.QueryAsync<DataMigrationInfo>(
                     @"SELECT [Version] FROM [Migrations]"
                 );
 
@@ -50,24 +50,24 @@ namespace QuickDiagrams.Api.Data
 
                 foreach (var m in futureMigrations.OrderBy(x => x.Version))
                 {
-                    using (var tran = await conn.BeginTransactionAsync(cancellationToken))
+                    using (var transaction = await connection.BeginTransactionAsync(cancellationToken))
                     {
                         try
                         {
                             var migration = migrations.Single(x => x.Version == m.Version);
 
-                            await migration.RunAsync(conn, cancellationToken);
+                            await migration.RunAsync(connection, cancellationToken);
 
-                            await conn.ExecuteAsync(
+                            await connection.ExecuteAsync(
                                 @"INSERT INTO [Migrations]([Version]) VALUES(@Version)",
                                 new { Version = m.Version }
                             );
 
-                            await tran.CommitAsync(cancellationToken);
+                            await transaction.CommitAsync(cancellationToken);
                         }
                         catch (Exception ex)
                         {
-                            await tran.RollbackAsync(cancellationToken);
+                            await transaction.RollbackAsync(cancellationToken);
                             throw ex;
                         }
                     }
